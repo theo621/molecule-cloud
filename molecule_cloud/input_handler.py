@@ -3,6 +3,7 @@
 import pandas as pd
 from pathlib import Path
 from typing import Dict, List, Tuple
+from collections import Counter
 
 
 class ExcelReader:
@@ -27,7 +28,7 @@ class ExcelReader:
         - [Optional] Scaffold: Pre-computed scaffold
 
         Returns:
-            DataFrame with parsed data
+            DataFrame with parsed data including Frequency column
         """
         df = pd.read_excel(self.excel_file)
 
@@ -63,6 +64,13 @@ class ExcelReader:
         # Normalize Activity column
         df_clean["Activity"] = df_clean["Activity"].astype(int)
 
+        # Calculate frequency for each scaffold
+        scaffold_counts = Counter(df_clean['SMILES'])
+        df_clean['Frequency'] = df_clean['SMILES'].map(scaffold_counts)
+
+        # Reset index
+        df_clean = df_clean.reset_index(drop=True)
+
         return df_clean
 
 
@@ -88,7 +96,7 @@ class CSVReader:
         - [Optional] Additional columns ignored
 
         Returns:
-            DataFrame with parsed data
+            DataFrame with parsed data including Frequency column
         """
         # Try different encodings
         encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
@@ -135,6 +143,13 @@ class CSVReader:
         # Normalize Activity column
         df_clean["Activity"] = df_clean["Activity"].astype(int)
 
+        # Calculate frequency for each scaffold
+        scaffold_counts = Counter(df_clean['SMILES'])
+        df_clean['Frequency'] = df_clean['SMILES'].map(scaffold_counts)
+
+        # Reset index
+        df_clean = df_clean.reset_index(drop=True)
+
         return df_clean
 
 
@@ -149,7 +164,7 @@ class DataReader:
             file_path: Path to file (.xlsx, .xls, or .csv)
 
         Returns:
-            DataFrame with parsed data
+            DataFrame with parsed data including Frequency column
         """
         file_path_str = str(file_path).lower()
 
