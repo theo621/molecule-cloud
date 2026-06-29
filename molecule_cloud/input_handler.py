@@ -23,8 +23,8 @@ class ExcelReader:
 
         Expected columns:
         - SMILES: SMILES string of the molecule
-        - Activity: Positive (1) or Negative (0) or boolean
-        - [Optional] Frequency: Pre-computed frequency
+        - Toxicity or Activity: Positive (1) or Negative (0) or boolean
+        - [Optional] Scaffold: Pre-computed scaffold
 
         Returns:
             DataFrame with parsed data
@@ -35,13 +35,35 @@ class ExcelReader:
         if "SMILES" not in df.columns:
             raise ValueError("Excel file must contain 'SMILES' column")
 
-        if "Activity" not in df.columns:
-            raise ValueError("Excel file must contain 'Activity' column")
+        # Check for Activity or Toxicity column
+        if "Toxicity" in df.columns:
+            # Rename Toxicity to Activity for consistency
+            df["Activity"] = df["Toxicity"]
+        elif "Activity" in df.columns:
+            pass  # Already has Activity column
+        else:
+            raise ValueError("Excel file must contain 'Toxicity' or 'Activity' column")
+
+        # If Scaffold column exists, use it instead of SMILES
+        if "Scaffold" in df.columns:
+            df_clean = pd.DataFrame({
+                'SMILES': df['Scaffold'],
+                'Activity': df['Activity']
+            })
+        else:
+            df_clean = pd.DataFrame({
+                'SMILES': df['SMILES'],
+                'Activity': df['Activity']
+            })
+
+        # Remove empty rows
+        df_clean = df_clean.dropna(subset=['SMILES'])
+        df_clean = df_clean[df_clean['SMILES'].astype(str).str.strip() != '']
 
         # Normalize Activity column
-        df["Activity"] = df["Activity"].astype(int)
+        df_clean["Activity"] = df_clean["Activity"].astype(int)
 
-        return df
+        return df_clean
 
 
 class CSVReader:
@@ -62,7 +84,7 @@ class CSVReader:
 
         Expected columns:
         - SMILES: SMILES string of the molecule
-        - Activity: Positive (1) or Negative (0) or boolean
+        - Activity or Toxicity: Positive (1) or Negative (0) or boolean
         - [Optional] Additional columns ignored
 
         Returns:
