@@ -1,4 +1,4 @@
-"""Excel input handling for molecule cloud."""
+"""Input handling for scaffold data (Excel and CSV)."""
 
 import pandas as pd
 from pathlib import Path
@@ -42,3 +42,100 @@ class ExcelReader:
         df["Activity"] = df["Activity"].astype(int)
 
         return df
+
+
+class CSVReader:
+    """Read and parse CSV files with scaffold data."""
+
+    def __init__(self, csv_file: str):
+        """Initialize CSV reader.
+
+        Args:
+            csv_file: Path to CSV file
+        """
+        self.csv_file = Path(csv_file)
+        if not self.csv_file.exists():
+            raise FileNotFoundError(f"CSV file not found: {csv_file}")
+
+    def read(self) -> pd.DataFrame:
+        """Read CSV file.
+
+        Expected columns:
+        - SMILES: SMILES string of the molecule
+        - Activity: Positive (1) or Negative (0) or boolean
+        - [Optional] Additional columns ignored
+
+        Returns:
+            DataFrame with parsed data
+        """
+        # Try different encodings
+        encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
+        df = None
+        
+        for encoding in encodings:
+            try:
+                df = pd.read_csv(self.csv_file, encoding=encoding)
+                break
+            except (UnicodeDecodeError, Exception):
+                continue
+        
+        if df is None:
+            raise ValueError(f"Could not read CSV file with any encoding: {encodings}")
+
+        # Validate required columns
+        col_names = list(df.columns)
+        
+        if len(col_names) < 2:
+            raise ValueError(f"CSV file must have at least 2 columns. Found: {col_names}")
+
+        # Auto-map columns: assume first 3 columns are SMILES, Activity, Scaffold
+        # Rename to standard format
+        col_smiles = col_names[0]
+        col_activity = col_names[1]
+        col_scaffold = col_names[2] if len(col_names) > 2 else None
+
+        # Use Scaffold column if available, otherwise use SMILES
+        if col_scaffold is not None:
+            df_clean = pd.DataFrame({
+                'SMILES': df[col_scaffold],
+                'Activity': df[col_activity]
+            })
+        else:
+            df_clean = pd.DataFrame({
+                'SMILES': df[col_smiles],
+                'Activity': df[col_activity]
+            })
+
+        # Remove empty rows
+        df_clean = df_clean.dropna(subset=['SMILES'])
+        df_clean = df_clean[df_clean['SMILES'].astype(str).str.strip() != '']
+
+        # Normalize Activity column
+        df_clean["Activity"] = df_clean["Activity"].astype(int)
+
+        return df_clean
+
+
+class DataReader:
+    """Universal reader for Excel and CSV files."""
+
+    @staticmethod
+    def read(file_path: str) -> pd.DataFrame:
+        """Read Excel or CSV file automatically.
+
+        Args:
+            file_path: Path to file (.xlsx, .xls, or .csv)
+
+        Returns:
+            DataFrame with parsed data
+        """
+        file_path_str = str(file_path).lower()
+
+        if file_path_str.endswith('.csv'):
+            reader = CSVReader(file_path)
+            return reader.read()
+        elif file_path_str.endswith(('.xlsx', '.xls')):
+            reader = ExcelReader(file_path)
+            return reader.read()
+        else:
+            raise ValueError(f"Unsupported file format: {file_path}. Use .csv or .xlsx")
