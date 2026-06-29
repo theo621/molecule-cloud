@@ -3,6 +3,7 @@
 import numpy as np
 import random
 from typing import Tuple
+from tqdm import tqdm
 
 
 class LayoutEngine:
@@ -73,7 +74,7 @@ class LayoutEngine:
         """
         positions = positions.copy()
 
-        for iteration in range(max_iterations):
+        for iteration in tqdm(range(max_iterations), desc="   🔄 Collision avoidance", unit="iter", leave=False):
             moved = False
 
             for i in range(len(positions)):
@@ -135,7 +136,7 @@ class LayoutEngine:
         velocities = np.zeros_like(positions)
         damping = 0.9
 
-        for iteration in range(iterations):
+        for iteration in tqdm(range(iterations), desc="   ⚡ Force-directed relaxation", unit="iter"):
             forces = np.zeros_like(positions)
 
             for i in range(len(positions)):
@@ -179,7 +180,7 @@ class LayoutEngine:
         center_x = self.canvas_width / 2
         center_y = self.canvas_height / 2
 
-        for iteration in range(iterations):
+        for iteration in tqdm(range(iterations), desc="   📦 Compaction", unit="iter", leave=False):
             for i in range(len(positions)):
                 # Move towards center with decay
                 dx = center_x - positions[i, 0]
