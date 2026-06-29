@@ -1,7 +1,7 @@
 """Scaffold data structures and operations."""
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from collections import Counter
 import numpy as np
 
