@@ -124,3 +124,31 @@ class MoleculeCloud:
         self.visualizer.export_svg(
             self.scaffolds, self.positions, self.rendered_scaffolds, output_path
         )
+
+    def export_separate_by_activity(self, output_dir: str = ".") -> None:
+        """Export separate visualizations for positive and negative scaffolds.
+
+        Args:
+            output_dir: Directory to save output files
+        """
+        if self.rendered_scaffolds is None:
+            raise RuntimeError("Must call generate() before export")
+
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+
+        # Export negative scaffolds (Activity = 0)
+        negative_svg = output_path / "molecule_cloud_negative.svg"
+        self.visualizer.export_svg_filtered(
+            self.scaffolds, self.positions, self.rendered_scaffolds,
+            str(negative_svg), activity=0
+        )
+        print(f"✅ Exported negative scaffolds to: {negative_svg}")
+
+        # Export positive scaffolds (Activity = 1)
+        positive_svg = output_path / "molecule_cloud_positive.svg"
+        self.visualizer.export_svg_filtered(
+            self.scaffolds, self.positions, self.rendered_scaffolds,
+            str(positive_svg), activity=1
+        )
+        print(f"✅ Exported positive scaffolds to: {positive_svg}")
